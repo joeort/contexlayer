@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-teal: #1a9988;
+    --color-navy: #073763;
+    --color-orange: #eb5600;
+    --color-cream: #fff5d9;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}

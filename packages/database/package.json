@@ -1,0 +1,25 @@
+{
+  "name": "@context-layer/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./repositories/*": "./src/repositories/*.ts"
+  },
+  "scripts": {
+    "migrate": "node --import tsx/esm scripts/migrate.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@context-layer/shared": "workspace:*",
+    "pg": "^8.13.3",
+    "postgres-migrations": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
