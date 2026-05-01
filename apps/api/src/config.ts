@@ -23,6 +23,9 @@ const envSchema = z.object({
   HUBSPOT_CLIENT_ID: z.string().optional(),
   HUBSPOT_CLIENT_SECRET: z.string().optional(),
   HUBSPOT_REDIRECT_URI: z.string().default('http://localhost:3001/api/v1/connectors/hubspot/callback'),
+
+  // Clerk webhook signing secret (from Clerk Dashboard → Webhooks)
+  CLERK_WEBHOOK_SECRET: z.string().optional(),
 })
 
 function loadConfig() {

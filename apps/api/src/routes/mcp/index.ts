@@ -3,36 +3,34 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
 import { EmbeddingService, ContextAssembler, FieldResolver, MetricResolver, RuleEngine, SqlGenerator } from '@context-layer/context-engine'
-import { MetricRepo } from '@context-layer/database'
+import { ApiKeyRepo, MetricRepo } from '@context-layer/database'
 import type { ContextBundle } from '@context-layer/shared'
+import { hashApiKey } from '@context-layer/shared'
 import { config } from '../../config.js'
-
-// MVP: parse orgId from key format cl_org_{orgId}_{secret}
-// Phase 3 will replace this with a DB lookup of a hashed key
-function resolveOrgFromApiKey(apiKey: string): string | null {
-  const cleaned = apiKey.replace(/^Bearer\s+/, '')
-  const parts = cleaned.split('_')
-  if (parts[0] === 'cl' && parts[1] === 'org' && parts[2]) return parts[2]
-  return null
-}
 
 export async function mcpRoutes(fastify: FastifyInstance) {
   // MCP JSON-RPC endpoint (StreamableHTTP transport for Claude Desktop / remote clients)
   fastify.all('/mcp/v1', async (request, reply) => {
-    const apiKey = (request.headers['x-api-key'] as string) ?? ''
-    const orgId = resolveOrgFromApiKey(apiKey)
-    if (!orgId) {
-      return reply.status(401).send({ error: 'Invalid or missing API key. Format: cl_org_{orgId}_{secret}' })
+    const rawKey = ((request.headers['x-api-key'] as string) ?? '').replace(/^Bearer\s+/, '')
+    if (!rawKey) {
+      return reply.status(401).send({ error: 'Missing x-api-key header' })
     }
 
-    const server = buildMcpServer(fastify, orgId)
+    const keyRepo = new ApiKeyRepo(fastify.db)
+    const resolved = await keyRepo.findByHash(hashApiKey(rawKey))
+    if (!resolved) {
+      return reply.status(401).send({ error: 'Invalid or revoked API key' })
+    }
+
+    const { orgId, keyId } = resolved
+    const server = buildMcpServer(fastify, orgId, keyId)
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
     await server.connect(transport)
     await transport.handleRequest(request.raw, reply.raw, request.body as Record<string, unknown>)
   })
 }
 
-function buildMcpServer(fastify: FastifyInstance, orgId: string): McpServer {
+function buildMcpServer(fastify: FastifyInstance, orgId: string, apiKeyId: string): McpServer {
   const embedding = new EmbeddingService(config.OPENAI_API_KEY)
   const assembler = new ContextAssembler(fastify.db, embedding)
   const fieldResolver = new FieldResolver(fastify.db, embedding)
@@ -71,10 +69,10 @@ function buildMcpServer(fastify: FastifyInstance, orgId: string): McpServer {
       // Audit log
       await fastify.db.query(
         `INSERT INTO mcp_requests
-           (org_id, intent, intent_category, context_served, metrics_matched, fields_matched, rules_applied, latency_ms)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           (org_id, api_key_id, intent, intent_category, context_served, metrics_matched, fields_matched, rules_applied, latency_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
-          orgId, query, 'metric_lookup', JSON.stringify(bundle),
+          orgId, apiKeyId, query, 'metric_lookup', JSON.stringify(bundle),
           bundle.metric ? [bundle.metric.name] : [],
           bundle.primaryField ? [bundle.primaryField.fieldName] : [],
           bundle.rulesApplied, latencyMs,

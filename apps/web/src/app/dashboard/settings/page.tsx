@@ -27,15 +27,22 @@ export default function SettingsPage() {
           </div>
         </Link>
 
-        <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-6 opacity-60 cursor-not-allowed">
+        <Link
+          href="/dashboard/settings/api-keys"
+          className="flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-6 hover:border-teal-DEFAULT hover:shadow-sm transition-all group"
+        >
           <div className="p-3 bg-gray-50 rounded-lg">
-            <Key className="h-6 w-6 text-gray-400" />
+            <Key className="h-6 w-6 text-gray-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-700">API Keys</h2>
-            <p className="text-sm text-gray-400">Manage API keys for programmatic access — coming soon</p>
+            <h2 className="text-lg font-semibold text-gray-900 group-hover:text-teal-DEFAULT transition-colors">
+              API Keys
+            </h2>
+            <p className="text-sm text-gray-500">
+              Create and manage API keys that authenticate MCP clients to your org's context.
+            </p>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   )

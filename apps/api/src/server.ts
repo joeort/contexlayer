@@ -11,8 +11,11 @@ import { connectorRoutes } from './routes/connectors/index.js'
 import { fieldRoutes } from './routes/dictionary/fields.js'
 import { metricRoutes } from './routes/dictionary/metrics.js'
 import { reportRoutes } from './routes/reports/index.js'
+import { apiKeyRoutes } from './routes/api-keys/index.js'
+import { ruleRoutes } from './routes/rules/index.js'
 import { mcpRoutes } from './routes/mcp/index.js'
 import { mcpTestRoutes } from './routes/mcp/test.js'
+import { mcpRequestRoutes } from './routes/mcp/requests.js'
 import { clerkWebhookRoutes } from './routes/webhooks/clerk.js'
 
 async function buildServer() {
@@ -53,7 +56,10 @@ async function buildServer() {
       await api.register(fieldRoutes)
       await api.register(metricRoutes)
       await api.register(reportRoutes)
+      await api.register(apiKeyRoutes)
       await api.register(mcpTestRoutes)
+      await api.register(mcpRequestRoutes)
+      await api.register(ruleRoutes)
     },
     { prefix: '/api/v1' }
   )

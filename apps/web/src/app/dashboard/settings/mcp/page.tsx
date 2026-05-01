@@ -1,20 +1,34 @@
 import { auth } from '@clerk/nextjs/server'
-import { Zap, Copy, Terminal, FlaskConical } from 'lucide-react'
+import { Zap, Copy, Terminal, FlaskConical, Clock } from 'lucide-react'
 import { McpTestConsole } from './McpTestConsole'
+import { RequestLog } from './RequestLog'
+
+async function fetchRecentRequests(apiUrl: string) {
+  try {
+    const res = await fetch(`${apiUrl}/api/v1/mcp/requests?limit=20`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
 
 export default async function McpSettingsPage() {
-  const { orgId } = await auth()
-
   const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.contextlayer.io'
-  const exampleApiKey = `cl_org_${orgId}_your_secret`
   const mcpEndpoint = `${apiUrl}/mcp/v1`
+
+  const [recentRequests] = await Promise.all([
+    fetchRecentRequests(apiUrl),
+  ])
 
   const claudeConfig = JSON.stringify(
     {
       mcpServers: {
         'context-layer': {
           url: mcpEndpoint,
-          headers: { 'x-api-key': exampleApiKey },
+          headers: { 'x-api-key': 'cl_live_...' },
         },
       },
     },
@@ -80,10 +94,11 @@ export default async function McpSettingsPage() {
       </div>
 
       {/* Claude Desktop config */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
         <h2 className="font-semibold text-gray-900 mb-2">Claude Desktop Configuration</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Add this to your <code className="bg-gray-100 px-1 rounded">claude_desktop_config.json</code>:
+          Add this to your <code className="bg-gray-100 px-1 rounded">claude_desktop_config.json</code>.
+          Get your key from <a href="/dashboard/settings/api-keys" className="text-teal-600 hover:underline">API Keys</a>.
         </p>
         <div className="relative">
           <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs overflow-x-auto">
@@ -93,9 +108,18 @@ export default async function McpSettingsPage() {
             <Copy className="h-3.5 w-3.5" />
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">
-          Replace <code>your_secret</code> with your actual API key. Keys are issued under API Keys in Settings.
+      </div>
+
+      {/* Request log */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Clock className="h-5 w-5 text-gray-400" />
+          <h2 className="font-semibold text-gray-900">Recent Requests</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Live log of MCP tool calls from your connected AI clients.
         </p>
+        <RequestLog initialRequests={recentRequests} apiUrl={apiUrl} />
       </div>
     </div>
   )

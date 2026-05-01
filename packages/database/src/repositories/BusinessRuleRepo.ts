@@ -67,6 +67,23 @@ export class BusinessRuleRepo {
     return rowToRule(rows[0])
   }
 
+  async listAll(orgId: string): Promise<BusinessRule[]> {
+    const { rows } = await this.db.query(
+      `SELECT * FROM business_rules WHERE org_id = $1 ORDER BY priority ASC, created_at DESC`,
+      [orgId]
+    )
+    return rows.map(rowToRule)
+  }
+
+  async deactivate(id: string, orgId: string): Promise<boolean> {
+    const { rowCount } = await this.db.query(
+      `UPDATE business_rules SET is_active = FALSE, updated_at = NOW()
+       WHERE id = $1 AND org_id = $2`,
+      [id, orgId]
+    )
+    return (rowCount ?? 0) > 0
+  }
+
   async findSimilar(orgId: string, embedding: number[], limit = 5): Promise<BusinessRule[]> {
     const { rows } = await this.db.query(
       `SELECT * FROM business_rules
